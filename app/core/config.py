@@ -9,9 +9,9 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
 	"""Parámetros centralizados del servicio."""
 
-	app_name: str = "SIGATI+ API"
+	app_name: str = "MVP Inventario Trazable"
 	api_prefix: str = "/api/v1"
-	database_url: str = "postgresql+psycopg2://postgres:postgres@localhost:5432/sigati"
+	database_url: str = Field(min_length=1)
 	jwt_secret_key: str = Field(default="local-development-only-change-this-secret-32", min_length=32)
 	jwt_algorithm: str = "HS256"
 	access_token_expire_minutes: int = 30

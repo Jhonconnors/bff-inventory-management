@@ -3,27 +3,32 @@ openapi: 3.0.3
 info:
   title: MVP Inventario Trazable
   version: 1.0.0
-  description: Sistema de Gestión de Activos Tecnológicos
+  description: API del proyecto MVP Inventario Trazable para gestión de activos tecnológicos.
 
 servers:
   - url: http://localhost:8000/api/v1
 
 tags:
-  - name: Authentications
+  - name: Authentication
   - name: Usuarios
   - name: Roles
   - name: Activos
   - name: Auditoria
-  - name: Catalogos
-  - name: Migracion
+  - name: Sucursales
+  - name: Departamentos
+  - name: Marcas
+  - name: Modelos
+  - name: TiposEquipo
+  - name: EstadosEquipo
   - name: Sistema
 
 paths:
 
   /authentication/login:
     post:
+      security: []
       tags:
-        -  Authentications
+        - Authentication
       summary: Iniciar sesión
       requestBody:
         required: true
@@ -41,9 +46,16 @@ paths:
 
   /authentication/refresh:
     post:
+      security: []
       tags:
-        - Authentications
+        - Authentication
       summary: Renovar token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshRequest'
       responses:
         '200':
           description: Token renovado
@@ -55,7 +67,7 @@ paths:
   /authentication/me:
     get:
       tags:
-        - Authentications
+        - Authentication
       summary: Usuario autenticado
       responses:
         '200':
@@ -68,7 +80,7 @@ paths:
   /authentication/logout:
     post:
       tags:
-        - Authentications
+        - Authentication
       summary: Cerrar sesión
       responses:
         '200':
@@ -319,26 +331,39 @@ paths:
           in: query
           schema:
             type: string
-        - name: usuario
+        - name: id_usuario
           in: query
           schema:
             type: integer
-        - name: departamento
+        - name: id_departamento
           in: query
           schema:
             type: integer
-        - name: sucursal
+        - name: id_sucursal
           in: query
           schema:
             type: integer
-        - name: estado
+        - name: id_estado
           in: query
           schema:
             type: integer
-        - name: tipo
+        - name: id_tipo
           in: query
           schema:
             type: integer
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+            minimum: 1
+            maximum: 100
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
 
       responses:
         '200':
@@ -418,6 +443,480 @@ paths:
                 items:
                   $ref: '#/components/schemas/Auditoria'
 
+  /activos/{id_activo}/asignar:
+    parameters:
+      - name: id_activo
+        in: path
+        required: true
+        schema:
+          type: integer
+    post:
+      tags:
+        - Activos
+      summary: Asignar custodio y ubicación en una transacción
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AsignacionRequest'
+      responses:
+        '200':
+          description: Activo asignado y auditado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Activo'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /activos/{id_activo}/trasladar:
+    parameters:
+      - name: id_activo
+        in: path
+        required: true
+        schema:
+          type: integer
+    post:
+      tags:
+        - Activos
+      summary: Trasladar activo y actualizar custodio y ubicación
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TrasladoRequest'
+      responses:
+        '200':
+          description: Activo trasladado y auditado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Activo'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /activos/{id_activo}/devolver:
+    parameters:
+      - name: id_activo
+        in: path
+        required: true
+        schema:
+          type: integer
+    post:
+      tags:
+        - Activos
+      summary: Devolver activo a bodega
+      responses:
+        '200':
+          description: Activo devuelto y auditado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Activo'
+
+  /activos/{id_activo}/baja:
+    parameters:
+      - name: id_activo
+        in: path
+        required: true
+        schema:
+          type: integer
+    post:
+      tags:
+        - Activos
+      summary: Dar de baja un activo y registrar su resolución
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BajaRequest'
+      responses:
+        '200':
+          description: Activo dado de baja y auditado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Activo'
+
+  /sucursales:
+    get:
+      tags: [Sucursales]
+      summary: Listar sucursales
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+      responses:
+        '200':
+          description: Sucursales
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Sucursal' }
+    post:
+      tags: [Sucursales]
+      summary: Crear sucursal
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CatalogCreate' }
+      responses:
+        '201':
+          description: Sucursal creada
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Sucursal' }
+
+  /sucursales/{entity_id}:
+    parameters:
+      - $ref: '#/components/parameters/EntityId'
+    get:
+      tags: [Sucursales]
+      summary: Consultar sucursal
+      responses:
+        '200':
+          description: Sucursal
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Sucursal' }
+    put:
+      tags: [Sucursales]
+      summary: Actualizar sucursal
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CatalogCreate' }
+      responses:
+        '200':
+          description: Sucursal actualizada
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Sucursal' }
+    delete:
+      tags: [Sucursales]
+      summary: Eliminar sucursal sin activos relacionados
+      responses:
+        '204': { description: Sucursal eliminada }
+
+  /departamentos:
+    get:
+      tags: [Departamentos]
+      summary: Listar departamentos
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+      responses:
+        '200':
+          description: Departamentos
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Departamento' }
+    post:
+      tags: [Departamentos]
+      summary: Crear departamento
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CatalogCreate' }
+      responses:
+        '201':
+          description: Departamento creado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Departamento' }
+
+  /departamentos/{entity_id}:
+    parameters:
+      - $ref: '#/components/parameters/EntityId'
+    get:
+      tags: [Departamentos]
+      summary: Consultar departamento
+      responses:
+        '200':
+          description: Departamento
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Departamento' }
+    put:
+      tags: [Departamentos]
+      summary: Actualizar departamento
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CatalogCreate' }
+      responses:
+        '200':
+          description: Departamento actualizado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Departamento' }
+    delete:
+      tags: [Departamentos]
+      summary: Eliminar departamento sin activos relacionados
+      responses:
+        '204': { description: Departamento eliminado }
+
+  /marcas:
+    get:
+      tags: [Marcas]
+      summary: Listar marcas
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+      responses:
+        '200':
+          description: Marcas
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Marca' }
+    post:
+      tags: [Marcas]
+      summary: Crear marca
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CatalogCreate' }
+      responses:
+        '201':
+          description: Marca creada
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Marca' }
+
+  /marcas/{entity_id}:
+    parameters:
+      - $ref: '#/components/parameters/EntityId'
+    get:
+      tags: [Marcas]
+      summary: Consultar marca
+      responses:
+        '200':
+          description: Marca
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Marca' }
+    put:
+      tags: [Marcas]
+      summary: Actualizar marca
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CatalogCreate' }
+      responses:
+        '200':
+          description: Marca actualizada
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Marca' }
+    delete:
+      tags: [Marcas]
+      summary: Eliminar marca sin modelos relacionados
+      responses:
+        '204': { description: Marca eliminada }
+
+  /modelos:
+    get:
+      tags: [Modelos]
+      summary: Listar modelos
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+      responses:
+        '200':
+          description: Modelos
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Modelo' }
+    post:
+      tags: [Modelos]
+      summary: Crear modelo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ModeloCreate' }
+      responses:
+        '201':
+          description: Modelo creado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Modelo' }
+
+  /modelos/{entity_id}:
+    parameters:
+      - $ref: '#/components/parameters/EntityId'
+    get:
+      tags: [Modelos]
+      summary: Consultar modelo
+      responses:
+        '200':
+          description: Modelo
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Modelo' }
+    put:
+      tags: [Modelos]
+      summary: Actualizar modelo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ModeloCreate' }
+      responses:
+        '200':
+          description: Modelo actualizado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Modelo' }
+    delete:
+      tags: [Modelos]
+      summary: Eliminar modelo sin activos relacionados
+      responses:
+        '204': { description: Modelo eliminado }
+
+  /tipos-equipo:
+    get:
+      tags: [TiposEquipo]
+      summary: Listar tipos de equipo
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+      responses:
+        '200':
+          description: Tipos de equipo
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/TipoEquipo' }
+    post:
+      tags: [TiposEquipo]
+      summary: Crear tipo de equipo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CatalogCreate' }
+      responses:
+        '201':
+          description: Tipo creado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TipoEquipo' }
+
+  /tipos-equipo/{entity_id}:
+    parameters:
+      - $ref: '#/components/parameters/EntityId'
+    get:
+      tags: [TiposEquipo]
+      summary: Consultar tipo de equipo
+      responses:
+        '200':
+          description: Tipo de equipo
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TipoEquipo' }
+    put:
+      tags: [TiposEquipo]
+      summary: Actualizar tipo de equipo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CatalogCreate' }
+      responses:
+        '200':
+          description: Tipo actualizado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TipoEquipo' }
+    delete:
+      tags: [TiposEquipo]
+      summary: Eliminar tipo sin activos relacionados
+      responses:
+        '204': { description: Tipo eliminado }
+
+  /estados-equipo:
+    get:
+      tags: [EstadosEquipo]
+      summary: Listar estados de equipo
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+      responses:
+        '200':
+          description: Estados de equipo
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/EstadoEquipo' }
+    post:
+      tags: [EstadosEquipo]
+      summary: Crear estado de equipo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CatalogCreate' }
+      responses:
+        '201':
+          description: Estado creado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/EstadoEquipo' }
+
+  /estados-equipo/{entity_id}:
+    parameters:
+      - $ref: '#/components/parameters/EntityId'
+    get:
+      tags: [EstadosEquipo]
+      summary: Consultar estado de equipo
+      responses:
+        '200':
+          description: Estado de equipo
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/EstadoEquipo' }
+    put:
+      tags: [EstadosEquipo]
+      summary: Actualizar estado de equipo
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CatalogCreate' }
+      responses:
+        '200':
+          description: Estado actualizado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/EstadoEquipo' }
+    delete:
+      tags: [EstadosEquipo]
+      summary: Eliminar estado sin activos relacionados
+      responses:
+        '204': { description: Estado eliminado }
+
   /auditoria:
     get:
       tags:
@@ -453,20 +952,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/Auditoria'
 
-  /dashboard/resumen:
-    get:
-      tags:
-        - Sistema
-      responses:
-        '200':
-          description: Dashboard resumen
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/DashboardResumen'
-
   /health:
     get:
+      security: []
       tags:
         - Sistema
       summary: Health Check
@@ -480,6 +968,7 @@ paths:
 
   /version:
     get:
+      security: []
       tags:
         - Sistema
       summary: Versión desplegada
@@ -517,10 +1006,20 @@ components:
     Unauthorized:
       description: No autorizado
 
+    Forbidden:
+      description: Permisos insuficientes
+
     NotFound:
       description: Recurso no encontrado
 
   schemas:
+
+    RefreshRequest:
+      type: object
+      required: [refresh_token]
+      properties:
+        refresh_token:
+          type: string
 
     Rol:
       type: object
@@ -577,11 +1076,23 @@ components:
 
     LoginResponse:
       type: object
+      required: [access_token, refresh_token, token_type]
       properties:
         access_token:
           type: string
+        refresh_token:
+          type: string
         token_type:
           type: string
+
+    CatalogCreate:
+      type: object
+      required: [nombre]
+      properties:
+        nombre:
+          type: string
+          minLength: 1
+          maxLength: 100
 
     Sucursal:
       type: object
@@ -617,6 +1128,18 @@ components:
         id_marca:
           type: integer
 
+    ModeloCreate:
+      type: object
+      required: [nombre, id_marca]
+      properties:
+        nombre:
+          type: string
+          minLength: 1
+          maxLength: 100
+        id_marca:
+          type: integer
+          minimum: 1
+
     TipoEquipo:
       type: object
       properties:
@@ -635,17 +1158,22 @@ components:
 
     Activo:
       type: object
+      required: [id_activo, placa, serie, fecha_registro, id_tipo, id_marca, id_modelo, id_estado, id_sucursal, id_departamento]
       properties:
         id_activo:
           type: integer
         placa:
           type: string
+          maxLength: 50
         serie:
           type: string
+          maxLength: 100
         mac:
           type: string
+          maxLength: 50
         posicion_monitor:
           type: string
+          maxLength: 50
         fecha_registro:
           type: string
           format: date-time
@@ -678,12 +1206,16 @@ components:
       properties:
         placa:
           type: string
+          maxLength: 50
         serie:
           type: string
+          maxLength: 100
         mac:
           type: string
+          maxLength: 50
         posicion_monitor:
           type: string
+          maxLength: 50
         id_tipo:
           type: integer
         id_marca:
@@ -703,6 +1235,32 @@ components:
       allOf:
         - $ref: '#/components/schemas/ActivoCreate'
 
+    AsignacionRequest:
+      type: object
+      required: [id_usuario, id_sucursal, id_departamento, nota_interna]
+      properties:
+        id_usuario: { type: integer, minimum: 1 }
+        id_sucursal: { type: integer, minimum: 1 }
+        id_departamento: { type: integer, minimum: 1 }
+        nota_interna: { type: string, minLength: 1, maxLength: 2000 }
+
+    TrasladoRequest:
+      type: object
+      required: [id_usuario, id_sucursal, id_departamento]
+      properties:
+        id_usuario: { type: integer, minimum: 1 }
+        id_sucursal: { type: integer, minimum: 1 }
+        id_departamento: { type: integer, minimum: 1 }
+        nota_interna: { type: string, maxLength: 2000 }
+
+    BajaRequest:
+      type: object
+      required: [resolucion, fecha, motivo]
+      properties:
+        resolucion: { type: string, minLength: 1, maxLength: 200 }
+        fecha: { type: string, format: date-time }
+        motivo: { type: string, minLength: 1, maxLength: 2000 }
+
     Auditoria:
       type: object
       properties:
@@ -720,16 +1278,6 @@ components:
         id_usuario:
           type: integer
 
-    DashboardResumen:
-      type: object
-      properties:
-        total_activos:
-          type: integer
-        total_usuarios:
-          type: integer
-        total_sucursales:
-          type: integer
-
     HealthResponse:
       type: object
       properties:
@@ -741,6 +1289,30 @@ components:
       properties:
         version:
           type: string
+
+  parameters:
+    EntityId:
+      name: entity_id
+      in: path
+      required: true
+      schema:
+        type: integer
+        minimum: 1
+    Limit:
+      name: limit
+      in: query
+      schema:
+        type: integer
+        default: 50
+        minimum: 1
+        maximum: 100
+    Offset:
+      name: offset
+      in: query
+      schema:
+        type: integer
+        default: 0
+        minimum: 0
 # 2) Apply the security globally to all operations
 security:
   - bearerAuth: []

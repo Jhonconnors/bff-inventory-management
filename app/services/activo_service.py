@@ -52,19 +52,22 @@ class ActivoService:
         previous = self._asset_snapshot(asset)
         return self._mutate("UPDATE", actor_id, lambda: self.repository.update(asset, values), {"antes": previous, "despues": values})
 
-    def assign(self, asset_id: int, user_id: int, note: str, actor_id: int) -> Activo:
+    def assign(self, asset_id: int, user_id: int, branch_id: int, department_id: int, note: str, actor_id: int) -> Activo:
         asset = self.get(asset_id)
         self._validate_user(user_id)
+        self._validate_catalog("id_sucursal", branch_id)
+        self._validate_catalog("id_departamento", department_id)
         assigned_state = self._state_by_name("Asignado")
         if assigned_state is None:
             raise BusinessRuleError("Debe existir el estado 'Asignado' para asignar activos")
         before = self._asset_snapshot(asset)
+        after = {"id_usuario": user_id, "id_sucursal": branch_id, "id_departamento": department_id, "id_estado": assigned_state.id_estado}
         def change():
-            asset.id_usuario = user_id
-            asset.id_estado = assigned_state.id_estado
+            for key, value in after.items():
+                setattr(asset, key, value)
             self.session.flush()
             return asset
-        return self._mutate("ASSIGN", actor_id, change, {"antes": before, "id_usuario": user_id, "nota_interna": note})
+        return self._mutate("ASSIGN", actor_id, change, {"antes": before, "despues": after, "nota_interna": note})
 
     def transfer(self, asset_id: int, user_id: int, branch_id: int, department_id: int, note: str | None, actor_id: int) -> Activo:
         asset = self.get(asset_id)

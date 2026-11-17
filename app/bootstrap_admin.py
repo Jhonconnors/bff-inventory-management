@@ -16,7 +16,9 @@ def main() -> None:
     try:
         admin_role = session.scalar(select(Rol).where(Rol.nombre == "ADMINISTRADOR"))
         if admin_role is None:
-            raise RuntimeError("Aplique primero las migraciones: alembic upgrade head")
+            admin_role = Rol(nombre="ADMINISTRADOR")
+            session.add(admin_role)
+            session.flush()
         existing_admin = session.scalar(select(Usuario.id_usuario).where(Usuario.id_rol == admin_role.id_rol, Usuario.activo.is_(True)))
         if existing_admin is not None:
             raise RuntimeError("Ya existe un administrador activo")

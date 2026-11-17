@@ -2,13 +2,15 @@ services:
   db:
     image: postgres:16-alpine
     environment:
-      POSTGRES_DB: sigati
-      POSTGRES_USER: sigati
+      POSTGRES_DB: ${POSTGRES_DB:-inventario_tecnologico}
+      POSTGRES_USER: ${POSTGRES_USER:-sigati}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-sigati-local}
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U sigati -d sigati"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-sigati} -d ${POSTGRES_DB:-inventario_tecnologico}"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -16,7 +18,7 @@ services:
   api:
     build: .
     environment:
-      DATABASE_URL: postgresql+psycopg2://sigati:${POSTGRES_PASSWORD:-sigati-local}@db:5432/sigati
+      DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-sigati}:${POSTGRES_PASSWORD:-sigati-local}@db:5432/${POSTGRES_DB:-inventario_tecnologico}
       JWT_SECRET_KEY: ${JWT_SECRET_KEY:?Set JWT_SECRET_KEY in your environment}
       CORS_ORIGINS: '["http://localhost:3000"]'
     ports:

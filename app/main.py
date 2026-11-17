@@ -1,4 +1,4 @@
-"""Aplicación FastAPI SIGATI+."""
+"""API del proyecto MVP Inventario Trazable."""
 
 import logging
 

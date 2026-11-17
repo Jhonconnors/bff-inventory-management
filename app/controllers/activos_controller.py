@@ -14,7 +14,7 @@ from app.services.activo_service import ActivoService
 
 router = APIRouter(prefix="/activos", tags=["Activos"])
 READ = require_roles("ADMINISTRADOR", "ENCARGADO_INVENTARIO", "MESA_SERVICIOS", "CONSULTA")
-WRITE = require_roles("ADMINISTRADOR", "ENCARGADO_INVENTARIO")
+WRITE = require_roles("ADMINISTRADOR")
 
 
 @router.get("", response_model=list[ActivoRead])
@@ -50,7 +50,7 @@ def asset_history(id_activo: int, limit: int = Query(100, ge=1, le=500), offset:
 
 @router.post("/{id_activo}/asignar", response_model=ActivoRead)
 def assign_asset(id_activo: int, payload: AsignacionRequest, session: Session = Depends(get_db), user: Usuario = Depends(WRITE)):
-    return ActivoService(ActivoRepository(session)).assign(id_activo, payload.id_usuario, payload.nota_interna, user.id_usuario)
+    return ActivoService(ActivoRepository(session)).assign(id_activo, payload.id_usuario, payload.id_sucursal, payload.id_departamento, payload.nota_interna, user.id_usuario)
 
 
 @router.post("/{id_activo}/trasladar", response_model=ActivoRead)

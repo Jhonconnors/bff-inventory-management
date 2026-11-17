@@ -1,0 +1,474 @@
+{
+  "info": {
+    "name": "MVP Inventario Trazable",
+    "description": "Coleccion Postman para la API MVP Inventario Trazable. Importe este JSON y configure baseUrl e IDs segun la base de datos. El login guarda accessToken y refreshToken automaticamente. Cuenta demo: sigati.admin@example.com / SigatiDemo123!",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{accessToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8000/api/v1", "type": "string" },
+    { "key": "accessToken", "value": "", "type": "string" },
+    { "key": "refreshToken", "value": "", "type": "string" },
+    { "key": "id_usuario", "value": "1", "type": "string" },
+    { "key": "id_rol", "value": "1", "type": "string" },
+    { "key": "id_activo", "value": "1", "type": "string" },
+    { "key": "id_evento", "value": "1", "type": "string" },
+    { "key": "id_sucursal", "value": "1", "type": "string" },
+    { "key": "id_departamento", "value": "1", "type": "string" },
+    { "key": "id_marca", "value": "1", "type": "string" },
+    { "key": "id_modelo", "value": "1", "type": "string" },
+    { "key": "id_tipo", "value": "1", "type": "string" },
+    { "key": "id_estado", "value": "1", "type": "string" },
+    { "key": "limit", "value": "50", "type": "string" },
+    { "key": "offset", "value": "0", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "POST Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Login exitoso', function () { pm.response.to.have.status(200); });",
+                  "const data = pm.response.json();",
+                  "pm.collectionVariables.set('accessToken', data.access_token);",
+                  "pm.collectionVariables.set('refreshToken', data.refresh_token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"correo\": \"sigati.admin@example.com\",\n  \"password\": \"SigatiDemo123!\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/authentication/login"
+          }
+        },
+        {
+          "name": "POST Refresh",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refresh_token\": \"{{refreshToken}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/authentication/refresh"
+          }
+        },
+        {
+          "name": "POST Logout",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  pm.collectionVariables.unset('accessToken');",
+                  "  pm.collectionVariables.unset('refreshToken');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/authentication/logout"
+          }
+        },
+        {
+          "name": "GET Me",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/authentication/me"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Usuarios",
+      "item": [
+        {
+          "name": "GET Listar usuarios",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/usuarios?limit={{limit}}&offset={{offset}}" }
+        },
+        {
+          "name": "POST Crear usuario",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Usuario Postman\",\n  \"correo\": \"usuario.postman@example.com\",\n  \"password\": \"UsuarioDemo123!\",\n  \"id_rol\": {{id_rol}}\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/usuarios"
+          }
+        },
+        {
+          "name": "GET Obtener usuario",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/usuarios/{{id_usuario}}" }
+        },
+        {
+          "name": "PUT Actualizar usuario",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Usuario actualizado\",\n  \"correo\": \"usuario.postman@example.com\",\n  \"id_rol\": {{id_rol}},\n  \"activo\": true\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/usuarios/{{id_usuario}}"
+          }
+        },
+        {
+          "name": "DELETE Desactivar usuario (baja logica)",
+          "request": { "method": "DELETE", "header": [], "url": "{{baseUrl}}/usuarios/{{id_usuario}}" }
+        },
+        {
+          "name": "PATCH Activar usuario",
+          "request": { "method": "PATCH", "header": [], "url": "{{baseUrl}}/usuarios/{{id_usuario}}/activar" }
+        },
+        {
+          "name": "PATCH Desactivar usuario",
+          "request": { "method": "PATCH", "header": [], "url": "{{baseUrl}}/usuarios/{{id_usuario}}/desactivar" }
+        }
+      ]
+    },
+    {
+      "name": "Roles",
+      "item": [
+        {
+          "name": "GET Listar roles",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/roles?limit={{limit}}&offset={{offset}}" }
+        },
+        {
+          "name": "POST Crear rol",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"nombre\": \"ROL_PRUEBA\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": "{{baseUrl}}/roles"
+          }
+        },
+        {
+          "name": "GET Obtener rol",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/roles/{{id_rol}}" }
+        },
+        {
+          "name": "PUT Actualizar rol",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"nombre\": \"ROL_PRUEBA_ACTUALIZADO\"\n}", "options": { "raw": { "language": "json" } } },
+            "url": "{{baseUrl}}/roles/{{id_rol}}"
+          }
+        },
+        {
+          "name": "DELETE Eliminar rol",
+          "request": { "method": "DELETE", "header": [], "url": "{{baseUrl}}/roles/{{id_rol}}" }
+        }
+      ]
+    },
+    {
+      "name": "Activos",
+      "item": [
+        {
+          "name": "GET Listar activos",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/activos?limit={{limit}}&offset={{offset}}" }
+        },
+        {
+          "name": "POST Crear activo",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"placa\": \"POSTMAN-ACTIVO-001\",\n  \"serie\": \"POSTMAN-SERIE-001\",\n  \"mac\": \"02:00:00:00:01:01\",\n  \"posicion_monitor\": \"Piso 1 - puesto 02\",\n  \"id_tipo\": {{id_tipo}},\n  \"id_marca\": {{id_marca}},\n  \"id_modelo\": {{id_modelo}},\n  \"id_estado\": {{id_estado}},\n  \"id_sucursal\": {{id_sucursal}},\n  \"id_departamento\": {{id_departamento}},\n  \"id_usuario\": null\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/activos"
+          }
+        },
+        {
+          "name": "GET Buscar activos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "description": "Agrega filtros opcionales: placa, serie, id_usuario, id_departamento, id_sucursal, id_estado o id_tipo.",
+            "url": "{{baseUrl}}/activos/busqueda?limit={{limit}}&offset={{offset}}"
+          }
+        },
+        {
+          "name": "GET Obtener activo",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/activos/{{id_activo}}" }
+        },
+        {
+          "name": "PUT Actualizar activo",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"placa\": \"POSTMAN-ACTIVO-001\",\n  \"serie\": \"POSTMAN-SERIE-001\",\n  \"mac\": \"02:00:00:00:01:01\",\n  \"posicion_monitor\": \"Piso 1 - puesto 02\",\n  \"id_tipo\": {{id_tipo}},\n  \"id_marca\": {{id_marca}},\n  \"id_modelo\": {{id_modelo}},\n  \"id_estado\": {{id_estado}},\n  \"id_sucursal\": {{id_sucursal}},\n  \"id_departamento\": {{id_departamento}},\n  \"id_usuario\": null\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/activos/{{id_activo}}"
+          }
+        },
+        {
+          "name": "DELETE Dar de baja activo",
+          "request": { "method": "DELETE", "header": [], "url": "{{baseUrl}}/activos/{{id_activo}}" }
+        },
+        {
+          "name": "GET Historial del activo",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/activos/{{id_activo}}/historial?limit=100&offset=0" }
+        },
+        {
+          "name": "POST Asignar activo",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id_usuario\": {{id_usuario}},\n  \"id_sucursal\": {{id_sucursal}},\n  \"id_departamento\": {{id_departamento}},\n  \"nota_interna\": \"Asignacion realizada desde Postman\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/activos/{{id_activo}}/asignar"
+          }
+        },
+        {
+          "name": "POST Trasladar activo",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id_usuario\": {{id_usuario}},\n  \"id_sucursal\": {{id_sucursal}},\n  \"id_departamento\": {{id_departamento}},\n  \"nota_interna\": \"Traslado realizado desde Postman\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/activos/{{id_activo}}/trasladar"
+          }
+        },
+        {
+          "name": "POST Devolver activo",
+          "request": { "method": "POST", "header": [], "url": "{{baseUrl}}/activos/{{id_activo}}/devolver" }
+        },
+        {
+          "name": "POST Dar de baja activo (con resolucion)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"resolucion\": \"RES-2026-001\",\n  \"fecha\": \"2026-11-17T12:00:00\",\n  \"motivo\": \"Equipo de prueba fuera de servicio\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/activos/{{id_activo}}/baja"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Auditoria",
+      "item": [
+        {
+          "name": "GET Listar auditoria",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/auditoria?limit={{limit}}&offset={{offset}}" }
+        },
+        {
+          "name": "GET Obtener evento",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/auditoria/{{id_evento}}" }
+        }
+      ]
+    },
+    {
+      "name": "Sucursales",
+      "item": [
+        {
+          "name": "GET Listar sucursales",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/sucursales?limit={{limit}}&offset={{offset}}" }
+        },
+        {
+          "name": "POST Crear sucursal",
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"nombre\": \"Sucursal Postman\"\n}", "options": { "raw": { "language": "json" } } }, "url": "{{baseUrl}}/sucursales" }
+        },
+        {
+          "name": "GET Obtener sucursal",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/sucursales/{{id_sucursal}}" }
+        },
+        {
+          "name": "PUT Actualizar sucursal",
+          "request": { "method": "PUT", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"nombre\": \"Sucursal Postman Actualizada\"\n}", "options": { "raw": { "language": "json" } } }, "url": "{{baseUrl}}/sucursales/{{id_sucursal}}" }
+        },
+        {
+          "name": "DELETE Eliminar sucursal",
+          "request": { "method": "DELETE", "header": [], "url": "{{baseUrl}}/sucursales/{{id_sucursal}}" }
+        }
+      ]
+    },
+    {
+      "name": "Departamentos",
+      "item": [
+        {
+          "name": "GET Listar departamentos",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/departamentos?limit={{limit}}&offset={{offset}}" }
+        },
+        {
+          "name": "POST Crear departamento",
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"nombre\": \"Departamento Postman\"\n}", "options": { "raw": { "language": "json" } } }, "url": "{{baseUrl}}/departamentos" }
+        },
+        {
+          "name": "GET Obtener departamento",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/departamentos/{{id_departamento}}" }
+        },
+        {
+          "name": "PUT Actualizar departamento",
+          "request": { "method": "PUT", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"nombre\": \"Departamento Postman Actualizado\"\n}", "options": { "raw": { "language": "json" } } }, "url": "{{baseUrl}}/departamentos/{{id_departamento}}" }
+        },
+        {
+          "name": "DELETE Eliminar departamento",
+          "request": { "method": "DELETE", "header": [], "url": "{{baseUrl}}/departamentos/{{id_departamento}}" }
+        }
+      ]
+    },
+    {
+      "name": "Marcas",
+      "item": [
+        {
+          "name": "GET Listar marcas",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/marcas?limit={{limit}}&offset={{offset}}" }
+        },
+        {
+          "name": "POST Crear marca",
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"nombre\": \"Marca Postman\"\n}", "options": { "raw": { "language": "json" } } }, "url": "{{baseUrl}}/marcas" }
+        },
+        {
+          "name": "GET Obtener marca",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/marcas/{{id_marca}}" }
+        },
+        {
+          "name": "PUT Actualizar marca",
+          "request": { "method": "PUT", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"nombre\": \"Marca Postman Actualizada\"\n}", "options": { "raw": { "language": "json" } } }, "url": "{{baseUrl}}/marcas/{{id_marca}}" }
+        },
+        {
+          "name": "DELETE Eliminar marca",
+          "request": { "method": "DELETE", "header": [], "url": "{{baseUrl}}/marcas/{{id_marca}}" }
+        }
+      ]
+    },
+    {
+      "name": "Modelos",
+      "item": [
+        {
+          "name": "GET Listar modelos",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/modelos?limit={{limit}}&offset={{offset}}" }
+        },
+        {
+          "name": "POST Crear modelo",
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"nombre\": \"Modelo Postman\",\n  \"id_marca\": {{id_marca}}\n}", "options": { "raw": { "language": "json" } } }, "url": "{{baseUrl}}/modelos" }
+        },
+        {
+          "name": "GET Obtener modelo",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/modelos/{{id_modelo}}" }
+        },
+        {
+          "name": "PUT Actualizar modelo",
+          "request": { "method": "PUT", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"nombre\": \"Modelo Postman Actualizado\",\n  \"id_marca\": {{id_marca}}\n}", "options": { "raw": { "language": "json" } } }, "url": "{{baseUrl}}/modelos/{{id_modelo}}" }
+        },
+        {
+          "name": "DELETE Eliminar modelo",
+          "request": { "method": "DELETE", "header": [], "url": "{{baseUrl}}/modelos/{{id_modelo}}" }
+        }
+      ]
+    },
+    {
+      "name": "TiposEquipo",
+      "item": [
+        {
+          "name": "GET Listar tipos de equipo",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/tipos-equipo?limit={{limit}}&offset={{offset}}" }
+        },
+        {
+          "name": "POST Crear tipo de equipo",
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"nombre\": \"Tipo Postman\"\n}", "options": { "raw": { "language": "json" } } }, "url": "{{baseUrl}}/tipos-equipo" }
+        },
+        {
+          "name": "GET Obtener tipo de equipo",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/tipos-equipo/{{id_tipo}}" }
+        },
+        {
+          "name": "PUT Actualizar tipo de equipo",
+          "request": { "method": "PUT", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"nombre\": \"Tipo Postman Actualizado\"\n}", "options": { "raw": { "language": "json" } } }, "url": "{{baseUrl}}/tipos-equipo/{{id_tipo}}" }
+        },
+        {
+          "name": "DELETE Eliminar tipo de equipo",
+          "request": { "method": "DELETE", "header": [], "url": "{{baseUrl}}/tipos-equipo/{{id_tipo}}" }
+        }
+      ]
+    },
+    {
+      "name": "EstadosEquipo",
+      "item": [
+        {
+          "name": "GET Listar estados de equipo",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/estados-equipo?limit={{limit}}&offset={{offset}}" }
+        },
+        {
+          "name": "POST Crear estado de equipo",
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"nombre\": \"Estado Postman\"\n}", "options": { "raw": { "language": "json" } } }, "url": "{{baseUrl}}/estados-equipo" }
+        },
+        {
+          "name": "GET Obtener estado de equipo",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/estados-equipo/{{id_estado}}" }
+        },
+        {
+          "name": "PUT Actualizar estado de equipo",
+          "request": { "method": "PUT", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"nombre\": \"Estado Postman Actualizado\"\n}", "options": { "raw": { "language": "json" } } }, "url": "{{baseUrl}}/estados-equipo/{{id_estado}}" }
+        },
+        {
+          "name": "DELETE Eliminar estado de equipo",
+          "request": { "method": "DELETE", "header": [], "url": "{{baseUrl}}/estados-equipo/{{id_estado}}" }
+        }
+      ]
+    },
+    {
+      "name": "Sistema",
+      "item": [
+        {
+          "name": "GET Health",
+          "request": { "auth": { "type": "noauth" }, "method": "GET", "header": [], "url": "{{baseUrl}}/health" }
+        },
+        {
+          "name": "GET Version",
+          "request": { "auth": { "type": "noauth" }, "method": "GET", "header": [], "url": "{{baseUrl}}/version" }
+        }
+      ]
+    }
+  ]
+}

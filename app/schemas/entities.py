@@ -28,7 +28,7 @@ class LoginResponse(BaseModel):
 
 
 class RolCreate(BaseModel):
-    nombre: str = Field(min_length=1, max_length=80)
+    nombre: str = Field(min_length=1, max_length=50)
 
 
 class RolRead(ORMModel):
@@ -37,15 +37,15 @@ class RolRead(ORMModel):
 
 
 class UsuarioCreate(BaseModel):
-    nombre: str = Field(min_length=1, max_length=160)
-    correo: EmailStr
+    nombre: str = Field(min_length=1, max_length=150)
+    correo: EmailStr = Field(max_length=100)
     password: str = Field(min_length=12, max_length=128)
     id_rol: int = Field(gt=0)
 
 
 class UsuarioUpdate(BaseModel):
-    nombre: str = Field(min_length=1, max_length=160)
-    correo: EmailStr
+    nombre: str = Field(min_length=1, max_length=150)
+    correo: EmailStr = Field(max_length=100)
     password: str | None = Field(default=None, min_length=12, max_length=128)
     id_rol: int = Field(gt=0)
     activo: bool = True
@@ -60,7 +60,7 @@ class UsuarioRead(ORMModel):
 
 
 class CatalogCreate(BaseModel):
-    nombre: str = Field(min_length=1, max_length=120)
+    nombre: str = Field(min_length=1, max_length=100)
 
 
 class CatalogRead(ORMModel):
@@ -97,10 +97,10 @@ class ModeloRead(CatalogRead):
 
 
 class ActivoFields(BaseModel):
-    placa: str = Field(min_length=1, max_length=80, pattern=r"^[A-Za-z0-9][A-Za-z0-9._/-]*$")
-    serie: str = Field(min_length=1, max_length=120, pattern=r"^[A-Za-z0-9][A-Za-z0-9._/-]*$")
-    mac: str | None = Field(default=None, pattern=r"^(?:[0-9A-Fa-f]{2}[:-]){5}[0-9A-Fa-f]{2}$")
-    posicion_monitor: str | None = Field(default=None, max_length=120)
+    placa: str = Field(min_length=1, max_length=50, pattern=r"^[A-Za-z0-9][A-Za-z0-9._/-]*$")
+    serie: str = Field(min_length=1, max_length=100, pattern=r"^[A-Za-z0-9][A-Za-z0-9._/-]*$")
+    mac: str | None = Field(default=None, max_length=50)
+    posicion_monitor: str | None = Field(default=None, max_length=50)
     id_tipo: int = Field(gt=0)
     id_marca: int = Field(gt=0)
     id_modelo: int = Field(gt=0)
@@ -125,6 +125,8 @@ class ActivoRead(ORMModel, ActivoFields):
 
 class AsignacionRequest(BaseModel):
     id_usuario: int = Field(gt=0)
+    id_sucursal: int = Field(gt=0)
+    id_departamento: int = Field(gt=0)
     nota_interna: str = Field(min_length=1, max_length=2000)
 
 

@@ -14,8 +14,12 @@ depends_on = None
 
 def upgrade() -> None:
     Base.metadata.create_all(bind=op.get_bind())
-    roles = sa.table("roles", sa.column("nombre", sa.String(length=80)))
-    op.bulk_insert(roles, [{"nombre": name} for name in ("ADMINISTRADOR", "ENCARGADO_INVENTARIO", "MESA_SERVICIOS", "CONSULTA")])
+    roles = sa.table("rol", sa.column("id_rol", sa.Integer), sa.column("nombre", sa.String(length=50)))
+    connection = op.get_bind()
+    for name in ("ADMINISTRADOR", "ENCARGADO_INVENTARIO", "MESA_SERVICIOS", "CONSULTA"):
+        exists = connection.execute(sa.select(roles.c.id_rol).where(roles.c.nombre == name)).first()
+        if exists is None:
+            connection.execute(sa.insert(roles).values(nombre=name))
 
 
 def downgrade() -> None:
