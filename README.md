@@ -14,24 +14,62 @@ La URL de PostgreSQL tiene el formato `postgresql+psycopg2://USUARIO:CLAVE@HOST:
 
 La documentación interactiva está en `http://localhost:8000/docs`; el health check es `http://localhost:8000/api/v1/health`.
 
-## Docker
+## Despliegue local con Docker
 
-Con `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB` y `JWT_SECRET_KEY` configurados en `.env`, inicia PostgreSQL y la API con `docker compose up --build`. Dentro de Docker la API usa el host `db`; desde el equipo local PostgreSQL queda publicado en `localhost:5432`. El contenedor de API aplica Alembic antes de iniciar Uvicorn.
+1. Instala Docker Desktop desde [docker.com/products/docker-desktop](https://www.docker.com/products/docker-desktop/) e inicia Docker Desktop. En Windows, usa el backend WSL 2 si el instalador lo solicita.
+2. Verifica la instalación en PowerShell:
+
+   ```powershell
+   docker --version
+   docker compose version
+   ```
+
+3. En esta carpeta, conserva en `.env` los mismos valores de desarrollo para `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD` y `JWT_SECRET_KEY`. Si aún no tienes ese archivo, créalo con esas cuatro variables y completa los valores de tu entorno local. No publiques ni compartas el archivo. Docker usa las credenciales de PostgreSQL tanto para iniciar la base como para conectar la API.
+4. Desde la raíz del proyecto, cambia a la carpeta del backend:
+
+   ```powershell
+   Set-Location .\bff-inventory-management
+   ```
+
+5. Construye las imágenes e inicia los tres contenedores:
+
+   ```powershell
+   docker compose up --build -d
+   ```
+
+   El servicio `db` construye la imagen desde `database/Dockerfile`, crea la base definida por `POSTGRES_DB` y ejecuta `01-esquema.sql` y `02-datos-prueba.sql` en una base nueva. El servicio `api` aplica las migraciones Alembic y publica FastAPI. El servicio `frontend` construye el MFE y Nginx reenvía `/api` al backend.
+6. Comprueba el estado:
+
+   ```powershell
+   docker compose ps
+   docker compose logs -f db api frontend
+   ```
+
+7. Abre:
+   - Frontend: `http://localhost:3000`
+   - Swagger del backend: `http://localhost:8000/docs`
+   - Health check: `http://localhost:8000/api/v1/health`
+   - PostgreSQL desde una herramienta local: `localhost:5432`, con las credenciales del `.env`.
+
+Los usuarios y roles de demostración provienen de `database/02-datos-prueba.sql` y conservan la contraseña de desarrollo `SigatiDemo123!`. La carpeta `database/` contiene también `00-crear-base-manual.sql` para uso manual con pgAdmin; no se ejecuta en Docker porque la imagen oficial crea la base a partir de `POSTGRES_DB`.
+
+Los scripts de inicialización de PostgreSQL solo se ejecutan cuando el volumen de datos está vacío. `docker compose down` detiene los servicios sin borrar la base. **`docker compose down -v` elimina permanentemente el volumen y todos sus datos**, y solo debe usarse cuando se quiera reiniciar la base desde cero.
+
+Las imágenes `sigati-db:local`, `sigati-api:local` y `sigati-frontend:local` se construyen y quedan disponibles en el almacenamiento local de Docker; los `Dockerfile` están en las carpetas `database/`, backend y frontend, respectivamente.
 
 ## Carga de datos de prueba
 
-En pgAdmin, conéctate a la base `inventario_tecnologico`, abre **Query Tool**, carga `datos_prueba.sql` y ejecuta todo el archivo. El SQL inserta datos idempotentemente en las diez tablas dentro de una transacción. Es solo para desarrollo/QA.
+En pgAdmin, conéctate a la base `inventario_tecnologico`, abre **Query Tool**, carga `database/02-datos-prueba.sql` y ejecuta todo el archivo. El SQL inserta datos idempotentemente en las diez tablas dentro de una transacción. Es solo para desarrollo/QA.
 
 Las cuentas demo usan la contraseña `SigatiDemo123!`:
 
 - `sigati.admin@example.com` (rol `ADMINISTRADOR`)
 - `sigati.inventario@example.com` (rol `ENCARGADO_INVENTARIO`)
-- `sigati.mesa@example.com` (rol `MESA_SERVICIOS`)
 - `sigati.consulta@example.com` (rol `CONSULTA`)
 
 ## Postman
 
-Importa `SIGATI.postman_collection.json`. La variable `baseUrl` usa por defecto `http://localhost:8000/api/v1`. Ejecuta **Authentication / POST Login** para que Postman guarde el access token y refresh token en las variables de colección. Ajusta las variables `id_*` si los identificadores de tu base de datos no empiezan en 1.
+Importa `MVP Inventario Trazable Postman.json`. La variable `baseUrl` usa por defecto `http://localhost:8000/api/v1`. Ejecuta **Authentication / POST Login** para que Postman guarde el access token y refresh token en las variables de colección. Ajusta las variables `id_*` si los identificadores de tu base de datos no empiezan en 1.
 
 ## Controllers y tablas
 
@@ -52,10 +90,18 @@ Los controllers reciben y validan requests, delegan la lógica a los services y 
 | `estados_equipo_controller` | CRUD del catálogo de estados. | `estado_equipo`. |
 | Endpoints de sistema en `main.py` | Health check y versión. | Ninguna tabla. |
 
-`app/` contiene modelos, schemas, controllers, services, repositories, seguridad y configuración. `migrations/` mantiene el esquema Alembic. `swagger.yml` es la especificación OpenAPI fuente y `SIGATI.postman_collection.json` contiene las solicitudes para probar la API.
+`app/` contiene modelos, schemas, controllers, services, repositories, seguridad y configuración. `migrations/` mantiene el esquema Alembic. `database/` contiene los scripts SQL y el Dockerfile de PostgreSQL. `swagger.yml` es la especificación OpenAPI fuente y `MVP Inventario Trazable Postman.json` contiene las solicitudes para probar la API.
+
+En usuarios, `PATCH /api/v1/usuarios/{id_usuario}/desactivar` conserva la cuenta y la oculta de las consultas de usuarios activos. `DELETE /api/v1/usuarios/{id_usuario}` la elimina permanentemente solo si no tiene eventos de auditoría ni activos asignados; el usuario autenticado tampoco puede eliminar su propia cuenta. Para conservar referencias históricas, desactiva en vez de eliminar cuentas que ya tengan actividad.
+
+Los roles predefinidos son `ADMINISTRADOR`, `ENCARGADO_INVENTARIO` y `CONSULTA`. `ADMINISTRADOR` tiene acceso total; `ENCARGADO_INVENTARIO` puede realizar operaciones de activos y catálogos y consultar usuarios y roles, sin modificarlos. `CONSULTA` y roles personalizados pueden consultar los módulos generales, pero no usuarios ni roles, y no tienen permisos de escritura. Estas reglas se validan en los endpoints y sustituyen cualquier descripción general previa de la autorización en este documento.
+
+El listado de usuarios oculta cuentas inactivas de forma predeterminada. Los administradores pueden incluirlas mediante `GET /api/v1/usuarios?include_inactive=true`; `PUT /api/v1/usuarios/{id_usuario}` permite cambiar `activo` para desactivar o reactivar la cuenta.
 
 ## Seguridad y alcance
 
-La API usa JWT bearer. Las cuentas autenticadas tienen permisos según su rol; el rol `CONSULTA` es de solo lectura y las modificaciones de activos están restringidas a `ADMINISTRADOR`. La bitácora es inmutable desde la API y las modificaciones de activos insertan su evento en la misma transacción.
+La API usa JWT bearer. Las cuentas autenticadas tienen permisos según su rol; el rol `CONSULTA` es de solo lectura y las modificaciones de activos están restringidas a `ADMINISTRADOR`. Logout requiere el access token en el header Bearer y el refresh token en el body, y revoca ambos. La lista de revocación vive en memoria: es adecuada para el proceso único del MVP, pero se pierde al reiniciar y no se comparte entre múltiples workers/instancias. Para desplegar escalado horizontal debe sustituirse por almacenamiento compartido. La bitácora es inmutable desde la API y las modificaciones de activos insertan su evento en la misma transacción.
+
+Las contraseñas aceptan hasta 255 caracteres. Los hashes nuevos usan bcrypt con prehash SHA-256 versionado; los hashes bcrypt existentes continúan verificándose.
 
 El MVP no incluye dashboard gerencial, QR, alertas de obsolescencia ni funciones predictivas.

@@ -81,10 +81,16 @@ paths:
     post:
       tags:
         - Authentication
-      summary: Cerrar sesión
+      summary: Revocar access token y refresh token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshRequest'
       responses:
         '200':
-          description: Sesión cerrada
+          description: Tokens revocados hasta su expiración
 
   /usuarios:
     get:
@@ -148,7 +154,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UsuarioCreate'
+                $ref: '#/components/schemas/UsuarioUpdate'
       responses:
         '200':
           description: Usuario actualizado
@@ -160,10 +166,12 @@ paths:
     delete:
       tags:
         - Usuarios
-      summary: Eliminar usuario
+      summary: Eliminar usuario permanentemente
       responses:
         '204':
           description: Usuario eliminado
+        '409':
+          description: No se puede eliminar si conserva eventos de auditoría o activos asignados; en ese caso, desactívelo
 
   /usuarios/{id_usuario}/activar:
     parameters:
@@ -1054,13 +1062,43 @@ components:
       properties:
         nombre:
           type: string
+          minLength: 1
+          maxLength: 150
         correo:
           type: string
           format: email
+          maxLength: 100
         password:
           type: string
+          minLength: 12
+          maxLength: 255
         id_rol:
           type: integer
+          minimum: 1
+
+    UsuarioUpdate:
+      type: object
+      required: [nombre, correo, id_rol]
+      properties:
+        nombre:
+          type: string
+          minLength: 1
+          maxLength: 150
+        correo:
+          type: string
+          format: email
+          maxLength: 100
+        password:
+          type: string
+          minLength: 12
+          maxLength: 255
+          nullable: true
+        id_rol:
+          type: integer
+          minimum: 1
+        activo:
+          type: boolean
+          default: true
 
     LoginRequest:
       type: object
@@ -1070,9 +1108,13 @@ components:
       properties:
         correo:
           type: string
+          minLength: 8
+          maxLength: 255
           format: email
         password:
           type: string
+          minLength: 8
+          maxLength: 255
 
     LoginResponse:
       type: object
@@ -1080,6 +1122,8 @@ components:
       properties:
         access_token:
           type: string
+          minLength: 12
+          maxLength: 255
         refresh_token:
           type: string
         token_type:
@@ -1093,14 +1137,10 @@ components:
           type: string
           minLength: 1
           maxLength: 100
+          maxLength: 100
 
     Sucursal:
       type: object
-      properties:
-        id_sucursal:
-          type: integer
-        nombre:
-          type: string
 
     Departamento:
       type: object

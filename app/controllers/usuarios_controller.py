@@ -12,12 +12,18 @@ from app.services.usuario_service import UsuarioService
 
 router = APIRouter(prefix="/usuarios", tags=["Usuarios"])
 ADMIN = require_roles("ADMINISTRADOR")
-READ_ROLES = require_roles("ADMINISTRADOR", "ENCARGADO_INVENTARIO", "MESA_SERVICIOS", "CONSULTA")
+READ_ROLES = require_roles("ADMINISTRADOR", "ENCARGADO_INVENTARIO")
 
 
 @router.get("", response_model=list[UsuarioRead])
-def list_users(limit: int = Query(50, ge=1, le=100), offset: int = Query(0, ge=0), session: Session = Depends(get_db), _user: Usuario = Depends(READ_ROLES)):
-    return UsuarioService(UsuarioRepository(session)).list(limit, offset)[0]
+def list_users(
+    limit: int = Query(50, ge=1, le=100),
+    offset: int = Query(0, ge=0),
+    include_inactive: bool = Query(False),
+    session: Session = Depends(get_db),
+    _user: Usuario = Depends(READ_ROLES),
+):
+    return UsuarioService(UsuarioRepository(session)).list(limit, offset, include_inactive)[0]
 
 
 @router.post("", response_model=UsuarioRead, status_code=status.HTTP_201_CREATED)
@@ -35,9 +41,17 @@ def update_user(id_usuario: int, payload: UsuarioUpdate, session: Session = Depe
     return UsuarioService(UsuarioRepository(session)).update(id_usuario, payload.model_dump(exclude_unset=True))
 
 
-@router.delete("/{id_usuario}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_user(id_usuario: int, session: Session = Depends(get_db), _user: Usuario = Depends(ADMIN)):
-    UsuarioService(UsuarioRepository(session)).delete(id_usuario)
+@router.delete(
+    "/{id_usuario}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    responses={
+        status.HTTP_409_CONFLICT: {
+            "description": "El usuario es la cuenta actual, tiene eventos de auditoría o conserva activos asignados"
+        }
+    },
+)
+def delete_user(id_usuario: int, session: Session = Depends(get_db), user: Usuario = Depends(ADMIN)):
+    UsuarioService(UsuarioRepository(session)).delete(id_usuario, user.id_usuario)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 

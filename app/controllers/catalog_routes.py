@@ -3,10 +3,10 @@
 from fastapi import APIRouter, Depends, Query, Response, status
 from sqlalchemy.orm import Session
 
-from app.core.security import require_roles
+from app.core.security import require_authenticated, require_roles
 from app.database import get_db
 
-READ = require_roles("ADMINISTRADOR", "ENCARGADO_INVENTARIO", "MESA_SERVICIOS", "CONSULTA")
+READ = require_authenticated
 WRITE = require_roles("ADMINISTRADOR", "ENCARGADO_INVENTARIO")
 
 

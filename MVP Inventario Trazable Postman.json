@@ -65,6 +65,20 @@
         },
         {
           "name": "POST Refresh",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Refresh exitoso', function () { pm.response.to.have.status(200); });",
+                  "const data = pm.response.json();",
+                  "pm.collectionVariables.set('accessToken', data.access_token);",
+                  "pm.collectionVariables.set('refreshToken', data.refresh_token);"
+                ]
+              }
+            }
+          ],
           "request": {
             "auth": { "type": "noauth" },
             "method": "POST",
@@ -95,7 +109,12 @@
           ],
           "request": {
             "method": "POST",
-            "header": [],
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refresh_token\": \"{{refreshToken}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
             "url": "{{baseUrl}}/authentication/logout"
           }
         },
@@ -147,8 +166,13 @@
           }
         },
         {
-          "name": "DELETE Desactivar usuario (baja logica)",
-          "request": { "method": "DELETE", "header": [], "url": "{{baseUrl}}/usuarios/{{id_usuario}}" }
+          "name": "DELETE Eliminar usuario",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "description": "Eliminación permanente. Responde 409 si el usuario es la cuenta actual, tiene eventos de auditoría o conserva activos asignados; en esos casos, usa PATCH /desactivar.",
+            "url": "{{baseUrl}}/usuarios/{{id_usuario}}"
+          }
         },
         {
           "name": "PATCH Activar usuario",

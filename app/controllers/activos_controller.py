@@ -5,7 +5,7 @@ from datetime import datetime
 from fastapi import APIRouter, Depends, Query, Response, status
 from sqlalchemy.orm import Session
 
-from app.core.security import require_roles
+from app.core.security import require_authenticated, require_roles
 from app.database import get_db
 from app.models.entities import Usuario
 from app.repositories.activo_repository import ActivoRepository
@@ -13,8 +13,8 @@ from app.schemas.entities import ActivoCreate, ActivoRead, ActivoUpdate, Asignac
 from app.services.activo_service import ActivoService
 
 router = APIRouter(prefix="/activos", tags=["Activos"])
-READ = require_roles("ADMINISTRADOR", "ENCARGADO_INVENTARIO", "MESA_SERVICIOS", "CONSULTA")
-WRITE = require_roles("ADMINISTRADOR")
+READ = require_authenticated
+WRITE = require_roles("ADMINISTRADOR", "ENCARGADO_INVENTARIO")
 
 
 @router.get("", response_model=list[ActivoRead])

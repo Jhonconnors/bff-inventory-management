@@ -16,7 +16,7 @@ def upgrade() -> None:
     Base.metadata.create_all(bind=op.get_bind())
     roles = sa.table("rol", sa.column("id_rol", sa.Integer), sa.column("nombre", sa.String(length=50)))
     connection = op.get_bind()
-    for name in ("ADMINISTRADOR", "ENCARGADO_INVENTARIO", "MESA_SERVICIOS", "CONSULTA"):
+    for name in ("ADMINISTRADOR", "ENCARGADO_INVENTARIO", "CONSULTA"):
         exists = connection.execute(sa.select(roles.c.id_rol).where(roles.c.nombre == name)).first()
         if exists is None:
             connection.execute(sa.insert(roles).values(nombre=name))

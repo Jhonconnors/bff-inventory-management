@@ -14,7 +14,7 @@ class ORMModel(BaseModel):
 
 class LoginRequest(BaseModel):
     correo: EmailStr
-    password: str = Field(min_length=8, max_length=128)
+    password: str = Field(min_length=8, max_length=255)
 
 
 class RefreshRequest(BaseModel):
@@ -39,14 +39,14 @@ class RolRead(ORMModel):
 class UsuarioCreate(BaseModel):
     nombre: str = Field(min_length=1, max_length=150)
     correo: EmailStr = Field(max_length=100)
-    password: str = Field(min_length=12, max_length=128)
+    password: str = Field(min_length=12, max_length=255)
     id_rol: int = Field(gt=0)
 
 
 class UsuarioUpdate(BaseModel):
     nombre: str = Field(min_length=1, max_length=150)
     correo: EmailStr = Field(max_length=100)
-    password: str | None = Field(default=None, min_length=12, max_length=128)
+    password: str | None = Field(default=None, min_length=12, max_length=255)
     id_rol: int = Field(gt=0)
     activo: bool = True
 
@@ -57,6 +57,10 @@ class UsuarioRead(ORMModel):
     correo: EmailStr
     activo: bool
     id_rol: int
+
+
+class AuthenticatedUserRead(UsuarioRead):
+    rol: RolRead
 
 
 class CatalogCreate(BaseModel):

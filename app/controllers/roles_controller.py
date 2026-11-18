@@ -10,7 +10,7 @@ from app.services.rol_service import RolService
 
 router = APIRouter(prefix="/roles", tags=["Roles"])
 ADMIN = require_roles("ADMINISTRADOR")
-READ = require_roles("ADMINISTRADOR", "ENCARGADO_INVENTARIO", "MESA_SERVICIOS", "CONSULTA")
+READ = require_roles("ADMINISTRADOR", "ENCARGADO_INVENTARIO")
 
 
 @router.get("", response_model=list[RolRead])

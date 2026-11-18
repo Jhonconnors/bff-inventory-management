@@ -10,7 +10,6 @@ INSERT INTO rol (nombre)
 VALUES
     ('ADMINISTRADOR'),
     ('ENCARGADO_INVENTARIO'),
-    ('MESA_SERVICIOS'),
     ('CONSULTA')
 ON CONFLICT (nombre) DO NOTHING;
 
@@ -26,7 +25,6 @@ FROM (
     VALUES
         ('Administrador de prueba', 'sigati.admin@example.com', 'ADMINISTRADOR'),
         ('Encargado de inventario de prueba', 'sigati.inventario@example.com', 'ENCARGADO_INVENTARIO'),
-        ('Mesa de servicios de prueba', 'sigati.mesa@example.com', 'MESA_SERVICIOS'),
         ('Usuario de consulta de prueba', 'sigati.consulta@example.com', 'CONSULTA')
 ) AS demo(nombre, correo, nombre_rol)
 JOIN rol AS r ON r.nombre = demo.nombre_rol
@@ -172,5 +170,4 @@ COMMIT;
 -- Cuentas creadas (password para todas: SigatiDemo123!):
 -- sigati.admin@example.com
 -- sigati.inventario@example.com
--- sigati.mesa@example.com
 -- sigati.consulta@example.com

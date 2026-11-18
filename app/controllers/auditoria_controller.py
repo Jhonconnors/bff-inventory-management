@@ -3,14 +3,14 @@
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
-from app.core.security import require_roles
+from app.core.security import require_authenticated
 from app.database import get_db
 from app.repositories.auditoria_repository import AuditoriaRepository
 from app.schemas.entities import AuditoriaRead
 from app.services.auditoria_service import AuditoriaService
 
 router = APIRouter(prefix="/auditoria", tags=["Auditoría"])
-READ = require_roles("ADMINISTRADOR", "ENCARGADO_INVENTARIO", "MESA_SERVICIOS", "CONSULTA")
+READ = require_authenticated
 
 
 @router.get("", response_model=list[AuditoriaRead])
