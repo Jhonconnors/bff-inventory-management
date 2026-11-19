@@ -80,3 +80,8 @@ CREATE TABLE bitacora_auditoria (
 CREATE INDEX idx_activo_serie ON activo(serie);
 CREATE INDEX idx_activo_placa ON activo(placa);
 CREATE INDEX idx_bitacora_activo ON bitacora_auditoria(id_activo);
+
+-- Roles iniciales requeridos por la aplicación.
+INSERT INTO rol (nombre)
+VALUES ('ADMINISTRADOR'), ('ENCARGADO_INVENTARIO'), ('CONSULTA')
+ON CONFLICT (nombre) DO NOTHING;

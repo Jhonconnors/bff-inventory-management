@@ -1,28 +1,28 @@
 services:
   db:
-    image: sigati-db:local
+    image: inventario-db:local
     build:
       context: ./database
       dockerfile: Dockerfile
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-inventario_tecnologico}
-      POSTGRES_USER: ${POSTGRES_USER:-sigati}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-sigati-local}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-admin}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT:-5433}:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-sigati} -d ${POSTGRES_DB:-inventario_tecnologico}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-inventario_tecnologico}"]
       interval: 5s
       timeout: 5s
       retries: 10
 
   api:
-    image: sigati-api:local
+    image: inventario-api:local
     build: .
     environment:
-      DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-sigati}:${POSTGRES_PASSWORD:-sigati-local}@db:5432/${POSTGRES_DB:-inventario_tecnologico}
+      DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-admin}@db:5432/${POSTGRES_DB:-inventario_tecnologico}
       JWT_SECRET_KEY: ${JWT_SECRET_KEY:?Set JWT_SECRET_KEY in your environment}
       CORS_ORIGINS: '["http://localhost:3000"]'
     ports:
@@ -37,7 +37,7 @@ services:
       retries: 10
 
   frontend:
-    image: sigati-frontend:local
+    image: inventario-frontend:local
     build:
       context: ../mfe-inventory-management
       dockerfile: Dockerfile

@@ -6,11 +6,12 @@ Backend REST para el MVP de gestión de activos tecnológicos. Usa Python 3.12, 
 
 1. Instala Python 3.12 y PostgreSQL.
 2. Instala dependencias: `python -m pip install -r requirements.txt`.
-3. Configura `DATABASE_URL` y `JWT_SECRET_KEY` en el archivo local `.env` de la raíz. No subas ese archivo al repositorio.
-4. Aplica la migración inicial: `python -m alembic upgrade head`.
-5. Inicia FastAPI: `python -m uvicorn app.main:app --reload`.
+3. Configura `DATABASE_URL` y `JWT_SECRET_KEY` en el archivo local `.env`. No subas ese archivo al repositorio.
+4. En pgAdmin, si aún no existe la base, conéctate a `postgres` y ejecuta `database/00-crear-base-manual.sql`.
+5. Conéctate a `inventario_tecnologico` y ejecuta `database/01-esquema.sql` una sola vez; crea las tablas y los roles iniciales. Para cargar los usuarios y registros de demostración, ejecuta también `database/02-datos-prueba.sql`.
+6. Inicia FastAPI: `python -m uvicorn app.main:app --reload`.
 
-La URL de PostgreSQL tiene el formato `postgresql+psycopg2://USUARIO:CLAVE@HOST:5432/BASE`. La aplicación y Alembic leen la misma variable `DATABASE_URL`; no hay una URL de BD escrita en el código. Si el esquema del modelo físico ya se creó desde pgAdmin, la migración registra la revisión y agrega los roles iniciales que falten.
+La URL de PostgreSQL tiene el formato `postgresql+psycopg2://USUARIO:CLAVE@HOST:5432/BASE`. La aplicación lee `DATABASE_URL` desde el entorno; el esquema se inicializa con los scripts SQL, no con migraciones automáticas.
 
 La documentación interactiva está en `http://localhost:8000/docs`; el health check es `http://localhost:8000/api/v1/health`.
 
@@ -24,7 +25,7 @@ La documentación interactiva está en `http://localhost:8000/docs`; el health c
    docker compose version
    ```
 
-3. En esta carpeta, conserva en `.env` los mismos valores de desarrollo para `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD` y `JWT_SECRET_KEY`. Si aún no tienes ese archivo, créalo con esas cuatro variables y completa los valores de tu entorno local. No publiques ni compartas el archivo. Docker usa las credenciales de PostgreSQL tanto para iniciar la base como para conectar la API.
+3. En esta carpeta, conserva en `.env` los valores de desarrollo para `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_PORT` y `JWT_SECRET_KEY`. Si aún no tienes ese archivo, créalo con esas variables y completa los valores de tu entorno local. No publiques ni compartas el archivo. Docker usa las credenciales de PostgreSQL tanto para iniciar la base como para conectar la API.
 4. Desde la raíz del proyecto, cambia a la carpeta del backend:
 
    ```powershell
@@ -37,7 +38,7 @@ La documentación interactiva está en `http://localhost:8000/docs`; el health c
    docker compose up --build -d
    ```
 
-   El servicio `db` construye la imagen desde `database/Dockerfile`, crea la base definida por `POSTGRES_DB` y ejecuta `01-esquema.sql` y `02-datos-prueba.sql` en una base nueva. El servicio `api` aplica las migraciones Alembic y publica FastAPI. El servicio `frontend` construye el MFE y Nginx reenvía `/api` al backend.
+   El servicio `db` construye la imagen desde `database/Dockerfile`, crea la base definida por `POSTGRES_DB` y ejecuta `01-esquema.sql` y `02-datos-prueba.sql` en una base nueva. El servicio `api` espera a que la base esté saludable y luego inicia FastAPI. El servicio `frontend` construye el MFE y Nginx reenvía `/api` al backend.
 6. Comprueba el estado:
 
    ```powershell
@@ -49,13 +50,13 @@ La documentación interactiva está en `http://localhost:8000/docs`; el health c
    - Frontend: `http://localhost:3000`
    - Swagger del backend: `http://localhost:8000/docs`
    - Health check: `http://localhost:8000/api/v1/health`
-   - PostgreSQL desde una herramienta local: `localhost:5432`, con las credenciales del `.env`.
+   - PostgreSQL del contenedor desde una herramienta local: `localhost:5433`, con las credenciales del `.env`. El puerto `5432` dentro de Docker no cambia; la API se conecta por la red interna al host `db`.
 
 Los usuarios y roles de demostración provienen de `database/02-datos-prueba.sql` y conservan la contraseña de desarrollo `SigatiDemo123!`. La carpeta `database/` contiene también `00-crear-base-manual.sql` para uso manual con pgAdmin; no se ejecuta en Docker porque la imagen oficial crea la base a partir de `POSTGRES_DB`.
 
 Los scripts de inicialización de PostgreSQL solo se ejecutan cuando el volumen de datos está vacío. `docker compose down` detiene los servicios sin borrar la base. **`docker compose down -v` elimina permanentemente el volumen y todos sus datos**, y solo debe usarse cuando se quiera reiniciar la base desde cero.
 
-Las imágenes `sigati-db:local`, `sigati-api:local` y `sigati-frontend:local` se construyen y quedan disponibles en el almacenamiento local de Docker; los `Dockerfile` están en las carpetas `database/`, backend y frontend, respectivamente.
+Las imágenes `inventario-db:local`, `inventario-api:local` y `inventario-frontend:local` se construyen y quedan disponibles en el almacenamiento local de Docker; los `Dockerfile` están en las carpetas `database/`, backend y frontend, respectivamente. El puerto `5433` del equipo evita competir por `5432` con un PostgreSQL instalado localmente.
 
 ## Carga de datos de prueba
 
@@ -90,7 +91,7 @@ Los controllers reciben y validan requests, delegan la lógica a los services y 
 | `estados_equipo_controller` | CRUD del catálogo de estados. | `estado_equipo`. |
 | Endpoints de sistema en `main.py` | Health check y versión. | Ninguna tabla. |
 
-`app/` contiene modelos, schemas, controllers, services, repositories, seguridad y configuración. `migrations/` mantiene el esquema Alembic. `database/` contiene los scripts SQL y el Dockerfile de PostgreSQL. `swagger.yml` es la especificación OpenAPI fuente y `MVP Inventario Trazable Postman.json` contiene las solicitudes para probar la API.
+`app/` contiene modelos, schemas, controllers, services, repositories, seguridad y configuración. `database/` contiene los scripts SQL para crear y poblar la base, además del Dockerfile de PostgreSQL. `swagger.yml` es la especificación OpenAPI fuente y `MVP Inventario Trazable Postman.json` contiene las solicitudes para probar la API.
 
 En usuarios, `PATCH /api/v1/usuarios/{id_usuario}/desactivar` conserva la cuenta y la oculta de las consultas de usuarios activos. `DELETE /api/v1/usuarios/{id_usuario}` la elimina permanentemente solo si no tiene eventos de auditoría ni activos asignados; el usuario autenticado tampoco puede eliminar su propia cuenta. Para conservar referencias históricas, desactiva en vez de eliminar cuentas que ya tengan actividad.
 
